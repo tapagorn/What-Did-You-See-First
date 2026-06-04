@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>What Did You See First? - เกมจิตวิทยาทดสอบการรับรู้</title>
+    <!-- ใช้ Google Fonts เพื่อความสวยงามทันสมัย -->
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        /* =========================================
+           การตั้งค่าตัวแปรสีและธีมตามที่กำหนด
+           ========================================= */
+        :root {
+            --primary: #6366F1;
+            --secondary: #8B5CF6;
+            --accent: #EC4899;
+            --bg: #0F172A;
+            --card: #1E293B;
+            --text: #F8FAFC;
+            --text-muted: #94A3B8;
+            --success: #10B981;
+            --error: #EF4444;
+            --font-family: 'Prompt', sans-serif;
+        }
+
+        /* =========================================
+           การตั้งค่าพื้นฐาน (Global Reset)
+           ========================================= */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: var(--font-family);
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow-x: hidden;
+        }
+
+        /* =========================================
+           โครงสร้างหลัก (Layout)
+           ========================================= */
+        #app {
+            width: 100%;
+            max-width: 800px;
+            min-height: 100vh;
+            position: relative;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .screen {
+            display: none;
+            width: 100%;
+            animation: fadeIn 0.5s ease-out forwards;
+        }
+
+        .screen.active {
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* =========================================
+           ส่วนประกอบ UI (UI Components)
+           ========================================= */
+        .card {
+            background-color: var(--card);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            text-align: center;
+        }
+
+        h1, h2, h3 {
+            margin-bottom: 1rem;
+            background: linear-gradient(to right, var(--primary), var(--accent));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: inline-block;
+        }
+
+        h1 { font-size: 2.5rem; }
+        h2 { font-size: 1.8rem; }
+        
+        p {
+            color: var(--text-muted);
+            line-height: 1.6;
+            margin-bottom: 1.5rem;
+            font-size: 1.1rem;
+        }
+
+        /* ปุ่มกดทั่วไป */
+        .btn {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 1.1rem;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            width: 100%;
+            max-width: 300px;
+            margin: 0 auto;
+            display: block;
+        }
+
+        .btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px -10px var(--primary);
+        }
+
+        .btn:disabled {
+            background: #334155;
+            color: #64748B;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 2px solid var(--primary);
+            color: var(--text);
+        }
+
+        /* กลุ่มปุ่มเลือกเพศ */
+        .gender-section {
+            margin: 20px 0 30px 0;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .gender-group {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 15px;
+        }
+
+        .gender-btn {
+            background: rgba(15, 23, 42, 0.5);
+            border: 2px solid #334155;
+            color: var(--text-muted);
+            padding: 12px 20px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 1rem;
+            font-weight: 500;
+            flex: 1;
+            max-width: 120px;
+        }
+
+        .gender-btn:hover {
+            border-color: var(--primary);
+            color: var(--text);
+        }
+
+        .gender-btn.selected {
+            background: rgba(99, 102, 241, 0.2);
+            border-color: var(--primary);
+            color: var(--text);
+            box-shadow: 0 0 15px rgba(99, 102, 241, 0.3);
+        }
+
+        /* =========================================
+           ส่วนของเกม (Game Specific Styles)
+           ========================================= */
+        .progress-container {
+            width: 100%;
+            background-color: var(--card);
+            border-radius: 10px;
+            height: 10px;
+            margin-bottom: 2rem;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--accent));
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .image-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto 2rem auto;
+            border-radius: 16px;
+            overflow: hidden;
+            aspect-ratio: 16/9;
+            background-color: #000;
+            box-shadow: 0 10px 30px -10px rgba(0,0,0,0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .game-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: opacity 0.3s;
+        }
+
+        .countdown-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 5rem;
+            font-weight: bold;
+            color: var(--text);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+
+        .countdown-overlay.active {
+            opacity: 1;
+        }
+
+        .options-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 12px;
+            margin-bottom: 2rem;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s;
+        }
+
+        .options-grid.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .option-btn {
+            background-color: var(--card);
+            border: 2px solid #334155;
+            color: var(--text);
+            padding: 15px 10px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+            font-size: 1rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 60px;
+        }
+
+        .option-btn:hover {
+            border-color: var(--secondary);
+            background-color: rgba(139, 92, 246, 0.1);
+        }
+
+        .option-btn.selected {
+            border-color: var(--primary);
+            background-color: rgba(99, 102, 241, 0.2);
+        }
+
+        .rank-badge {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: var(--accent);
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 12px;
+            font-weight: bold;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            opacity: 0;
+            transform: scale(0);
+            transition: all 0.2s;
+        }
+
+        .option-btn.selected .rank-badge {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .rank-1 .rank-badge { background: #F59E0B; } 
+        .rank-2 .rank-badge { background: #94A3B8; } 
+        .rank-3 .rank-badge { background: #B45309; } 
+
+        /* =========================================
+           ส่วนผลลัพธ์ (Result Styles)
+           ========================================= */
+        .archetype-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            animation: bounce 2s infinite;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1rem;
+            margin-top: 2rem;
+            text-align: left;
+        }
+
+        .stat-item {
+            background: rgba(15, 23, 42, 0.5);
+            padding: 1rem;
+            border-radius: 8px;
+        }
+
+        .stat-title {
+            color: var(--accent);
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+
+        .loading-spinner {
+            border: 4px solid rgba(255,255,255,0.1);
+            border-left-color: var(--primary);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem auto;
+            display: inline-block;
+        }
+
+        /* =========================================
+           แอนิเมชัน (Animations)
+           ========================================= */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        @media (min-width: 600px) {
+            .options-grid { grid-template-columns: repeat(5, 1fr); }
+            .stats-grid { grid-template-columns: 1fr 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="app">
+        <!-- =========================================
+             หน้าจอ 1: ต้อนรับและระบุตัวตน (Welcome Screen)
+             ========================================= -->
+        <div id="screen-welcome" class="screen active card">
+            <h1>What Did You See First?</h1>
+            <p>จิตใต้สำนึกของคุณทำงานอย่างไร? <br>ค้นพบบุคลิกภาพที่ซ่อนอยู่ผ่านการรับรู้ภาพแรกที่คุณมองเห็น</p>
+            <div style="text-align: left; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 10px; margin-bottom: 10px;">
+                <h3 style="font-size: 1.2rem; margin-bottom: 10px;">กติกาการเล่น</h3>
+                <ul style="color: var(--text-muted); margin-left: 20px; line-height: 1.6;">
+                    <li>คุณจะเห็นภาพเรียงต่อกัน <strong>3 ภาพ</strong></li>
+                    <li>แต่ละภาพจะแสดงเพียง <strong>3 วินาที</strong></li>
+                    <li>เมื่อดูครบทุกภาพ ให้เลือกสิ่งที่คุณเห็น <strong>3 อันดับแรก</strong></li>
+                    <li>ห้ามคิดนาน ใช้สัญชาตญาณแรกของคุณ!</li>
+                </ul>
+            </div>
+
+            <!-- ส่วนเลือกเพศ -->
+            <div class="gender-section">
+                <p style="margin-bottom: 5px; font-weight: 500; color: var(--text);">กรุณาเลือกเพศของคุณเพื่อเริ่มเกม</p>
+                <div class="gender-group">
+                    <button class="gender-btn" onclick="selectGender('ชาย', this)">ชาย</button>
+                    <button class="gender-btn" onclick="selectGender('หญิง', this)">หญิง</button>
+                    <button class="gender-btn" onclick="selectGender('ไม่ระบุ', this)">ไม่ระบุ</button>
+                </div>
+            </div>
+
+            <!-- ตัวแสดงสถานะโหลดข้อมูลจาก Sheet -->
+            <div id="data-status" style="font-size: 0.9rem; color: var(--text-muted); margin: 15px 0 10px 0;">
+                กำลังเตรียมข้อมูลระบบ... <span class="loading-spinner" style="width: 15px; height: 15px; border-width: 2px; margin: 0 0 -2px 5px;"></span>
+            </div>
+
+            <!-- ปุ่มเริ่มเกม (จะถูกล็อคจนกว่าจะเลือกเพศและโหลดข้อมูลเสร็จ) -->
+            <button class="btn" id="btn-start-game" onclick="startGame()" disabled>กำลังโหลดข้อมูล...</button>
+        </div>
+
+        <!-- =========================================
+             หน้าจอ 2: หน้าเล่นเกม (Game Screen)
+             ========================================= -->
+        <div id="screen-game" class="screen">
+            <div class="progress-container">
+                <div class="progress-bar" id="game-progress"></div>
+            </div>
+            
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <h2 id="round-title" style="margin:0;">รอบที่ 1/8</h2>
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <span id="instruction-text" style="color: var(--accent); font-weight: bold;">จดจำสิ่งที่คุณเห็น!</span>
+                    <!-- ย้ายเวลานับถอยหลังมาไว้ตรงนี้ พร้อมปรับสไตล์ใหม่ให้ชัดเจนขึ้น -->
+                    <div id="top-countdown" style="display: none; background: linear-gradient(135deg, var(--primary), var(--accent)); color: white; border-radius: 50%; width: 40px; height: 40px; justify-content: center; align-items: center; font-size: 1.5rem; font-weight: bold; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">3</div>
+                </div>
+            </div>
+
+            <div class="image-container" id="image-container">
+                <img src="" alt="ภาพปริศนา" class="game-image" id="round-image">
+                <!-- นำ countdown-overlay ตัวเก่าออก เพื่อไม่ให้บังรูปภาพ -->
+            </div>
+
+            <div class="options-grid" id="options-grid">
+                <!-- ปุ่มจะถูกสร้างผ่าน JavaScript -->
+            </div>
+
+            <button class="btn" id="btn-next-round" onclick="submitAnswers()" disabled>ยืนยัน 3 อันดับ (ดูผลลัพธ์)</button>
+        </div>
+
+        <!-- =========================================
+             หน้าจอ 3: แสดงผลลัพธ์ (Result Screen)
+             ========================================= -->
+        <div id="screen-result" class="screen card">
+            <div id="loading-result">
+                <div class="loading-spinner"></div>
+                <h2>กำลังวิเคราะห์จิตใต้สำนึกของคุณ...</h2>
+                <p>ระบบกำลังประมวลผลรูปแบบการรับรู้และบันทึกข้อมูล</p>
+            </div>
+
+            <div id="final-result" style="display: none;">
+                <h2 style="font-size: 1.5rem; color: var(--text-muted); margin-bottom: 0;">บุคลิกภาพการรับรู้ของคุณคือ</h2>
+                <div class="archetype-icon" id="res-icon">🌟</div>
+                <h1 id="res-title" style="font-size: 3rem; margin-bottom: 0.5rem;">The Name</h1>
+                
+                <p id="res-desc" style="font-size: 1.2rem; color: var(--text);"></p>
+
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-title">💪 จุดแข็ง (Strengths)</div>
+                        <p id="res-strength" style="margin:0; font-size: 0.95rem;"></p>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-title">🌱 จุดที่ควรพัฒนา (Growth Areas)</div>
+                        <p id="res-weakness" style="margin:0; font-size: 0.95rem;"></p>
+                    </div>
+                    <div class="stat-item" style="grid-column: 1 / -1;">
+                        <div class="stat-title">💼 อาชีพที่เหมาะสม (Ideal Careers)</div>
+                        <p id="res-career" style="margin:0; font-size: 0.95rem;"></p>
+                    </div>
+                </div>
+                
+                <button class="btn btn-outline" style="margin-top: 2rem;" onclick="location.reload()">เล่นใหม่อีกครั้ง</button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- =========================================
+         ส่วนประมวลผล (JavaScript)
+         ========================================= -->
+    <script>
+        const API_URL = "https://script.google.com/macros/s/AKfycbx0E6joUjAMchzR3xT_uMZowdHcKXnz1DulMqAV_2lw5ScEABCFyKnNPzVIlf1zxG6S/exec";
+
+        const CATEGORIES = ['Human', 'Animal', 'Logic', 'Language', 'Object', 'Nature', 'Symbol', 'Motion'];
+        
+        const ARCHETYPES = {
+            'Human': { name: 'The Connector', icon: '🤝', desc: 'คุณให้ความสำคัญกับผู้คนเป็นอันดับแรก มีความเข้าอกเข้าใจสูงและเชื่อมโยงกับความรู้สึกของผู้อื่นได้ดี', strength: 'การสื่อสารระหว่างบุคคล, ความเห็นอกเห็นใจ, การสร้างเครือข่าย', weakness: 'อาจได้รับอิทธิพลจากอารมณ์ของผู้อื่นมากเกินไปจนลืมดูแลตัวเอง', career: 'HR, นักจิตวิทยา, งานบริการลูกค้า, นักสังคมสงเคราะห์' },
+            'Animal': { name: 'The Guardian', icon: '🐾', desc: 'คุณมีสัญชาตญาณในการปกป้อง ใส่ใจรายละเอียดที่เล็กน้อย และมีความอ่อนโยนซ่อนอยู่ในตัว', strength: 'ความภักดี, การสังเกตสัญชาตญาณ, ความเป็นผู้ดูแล', weakness: 'มักจะกังวลเรื่องความปลอดภัยมากเกินไป หรือหวงแหนพื้นที่ส่วนตัว', career: 'สัตวแพทย์, พยาบาล, ผู้พิทักษ์ป่า, ครูปฐมวัย' },
+            'Logic': { name: 'The Analyst', icon: '🧠', desc: 'คุณมองโลกผ่านเหตุผลและโครงสร้าง ชอบหาความเชื่อมโยงของสิ่งต่างๆ ด้วยตรรกะที่เป็นระบบ', strength: 'การแก้ปัญหาซับซ้อน, การคิดเชิงวิพากษ์, ความมีเหตุผล', weakness: 'อาจดูเย็นชาหรือยึดติดกับทฤษฎีมากเกินไปจนมองข้ามความรู้สึก', career: 'นักวิเคราะห์ข้อมูล, โปรแกรมเมอร์, วิศวกร, นักบัญชี' },
+            'Language': { name: 'The Communicator', icon: '💬', desc: 'คุณไวต่อความหมายแฝงและสัญลักษณ์ที่สื่อสารออกมา ถ่ายทอดความคิดได้อย่างสละสลวย', strength: 'การโน้มน้าวใจ, ทักษะทางภาษา, การจับประเด็น', weakness: 'อาจคิดมากกับคำพูดของผู้อื่น หรือตีความหมายผิดเพี้ยนไปเอง', career: 'นักเขียน, นักการตลาด, นักแปล, นักข่าว' },
+            'Object': { name: 'The Builder', icon: '🛠️', desc: 'คุณมองสิ่งต่างๆ เป็นรูปธรรม เน้นการลงมือทำและให้ความสำคัญกับสิ่งที่จับต้องหรือใช้งานได้จริง', strength: 'การจัดการที่เป็นระบบ, ความอดทน, การสร้างผลลัพธ์ที่จับต้องได้', weakness: 'อาจขาดจินตนาการนอกกรอบ หรือไม่ชอบทฤษฎีที่จับต้องไม่ได้', career: 'สถาปนิก, ผู้จัดการโครงการ, เชฟ, ช่างฝีมือ' },
+            'Nature': { name: 'The Explorer', icon: '🌿', desc: 'จิตวิญญาณของคุณรักอิสระ เปิดรับสิ่งใหม่ๆ และแสวงหาความกลมกลืนกับสิ่งแวดล้อมรอบตัว', strength: 'ความยืดหยุ่น, ความคิดสร้างสรรค์, การปรับตัวเข้ากับสภาพแวดล้อม', weakness: 'อาจเบื่อง่ายหากต้องอยู่ในกรอบหรือทำอะไรซ้ำซากจำเจ', career: 'ช่างภาพสารคดี, ไกด์นำเที่ยว, นักวิจัยสิ่งแวดล้อม, ศิลปิน' },
+            'Symbol': { name: 'The Visionary', icon: '✨', desc: 'คุณมักจะมองเห็นภาพรวมและความหมายที่ลึกซึ้งซึ่งซ่อนอยู่เบื้องหลังสิ่งธรรมดา มองการณ์ไกล', strength: 'จินตนาการล้ำเลิศ, การคิดเชิงกลยุทธ์ระยะยาว, ความเป็นผู้นำทางความคิด', weakness: 'อาจละเลยรายละเอียดเล็กๆ น้อยๆ ในปัจจุบัน หรือมีไอเดียที่ทำจริงได้ยาก', career: 'ผู้กำกับศิลป์, นักออกแบบกลยุทธ์, นักประพันธ์, ผู้ประกอบการ' },
+            'Motion': { name: 'The Reactor', icon: '⚡', desc: 'คุณตอบสนองต่อการเปลี่ยนแปลงได้ไว มีพลังงานสูง และมักจะจับสังเกตสิ่งที่กำลังเคลื่อนไหวได้ก่อนใคร', strength: 'ความว่องไว, การตัดสินใจในภาวะฉุกเฉิน, ความกระตือรือร้น', weakness: 'อาจใจร้อน วู่วาม หรือขาดความรอบคอบในการวางแผนระยะยาว', career: 'นักกีฬา, นักเทรดหุ้น, พนักงานกู้ภัย, ออแกไนเซอร์อีเวนต์' }
+        };
+
+        // Fallback Data
+        let gameData = {
+            images: [
+                "https://picsum.photos/seed/psy1/800/450",
+                "https://picsum.photos/seed/psy2/800/450",
+                "https://picsum.photos/seed/psy3/800/450"
+            ],
+            items: [
+                { name: "ใบหน้าผู้หญิง", type: "Human" }, { name: "สุนัขจิ้งจอก", type: "Animal" }, 
+                { name: "สมการคณิตศาสตร์", type: "Logic" }, { name: "คำว่า 'LOVE'", type: "Language" }, 
+                { name: "นาฬิกาพก", type: "Object" }, { name: "ภูเขาน้ำแข็ง", type: "Nature" }, 
+                { name: "รูปดาว", type: "Symbol" }, { name: "เงาที่สั่นไหว", type: "Motion" }, 
+                { name: "นกกำลังบิน", type: "Animal" }, { name: "รอยยิ้ม", type: "Human" },
+                { name: "กุญแจเก่า", type: "Object" }, { name: "เปลวไฟ", type: "Motion" }
+            ]
+        };
+
+        let currentImageIndex = 0; 
+        let currentSelections = []; 
+        let isImageShowing = false;
+        let imageTimer;
+        let isDataReady = false; // ตัวแปรเช็คสถานะโหลดข้อมูล
+        
+        let userData = {
+            gender: null 
+        };
+
+        let scores = {
+            Human: 0, Animal: 0, Logic: 0, Language: 0, 
+            Object: 0, Nature: 0, Symbol: 0, Motion: 0
+        };
+
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+        }
+
+        // เช็คเงื่อนไขเพื่อเปิดปุ่มเริ่มเกม
+        function checkStartButton() {
+            const btnStart = document.getElementById('btn-start-game');
+            if (userData.gender && isDataReady) {
+                btnStart.disabled = false;
+                btnStart.innerText = "เริ่มค้นหาตัวตน";
+            } else if (userData.gender && !isDataReady) {
+                btnStart.disabled = true;
+                btnStart.innerText = "กำลังเชื่อมต่อข้อมูล...";
+            }
+        }
+
+        function selectGender(selectedGender, btnElement) {
+            userData.gender = selectedGender;
+            document.querySelectorAll('.gender-btn').forEach(btn => btn.classList.remove('selected'));
+            btnElement.classList.add('selected');
+            checkStartButton();
+        }
+
+        function startGame() {
+            if (!userData.gender || !isDataReady) return; 
+            showScreen('screen-game');
+            currentImageIndex = 0;
+            currentSelections = [];
+            showNextImage();
+        }
+
+        function showNextImage() {
+            if (currentImageIndex >= gameData.images.length) {
+                endImagePhase();
+                return;
+            }
+
+            document.getElementById('round-title').innerText = `ภาพที่ ${currentImageIndex + 1}/${gameData.images.length}`;
+            const progress = (currentImageIndex / gameData.images.length) * 100;
+            document.getElementById('game-progress').style.width = `${progress}%`;
+            
+            document.getElementById('btn-next-round').disabled = true;
+            document.getElementById('instruction-text').innerText = "กำลังเตรียมภาพ... ⏳";
+            document.getElementById('options-grid').classList.remove('active');
+            document.getElementById('options-grid').innerHTML = ''; 
+            
+            const imgElement = document.getElementById('round-image');
+            const countdownEl = document.getElementById('top-countdown'); // เปลี่ยนไปดึงไอดีตัวใหม่
+            
+            // ซ่อนภาพก่อนระหว่างรอโหลด
+            imgElement.style.opacity = '0';
+            countdownEl.style.display = 'none'; // ซ่อนเวลาไว้ก่อนจนกว่ารูปจะโหลดเสร็จ
+            if (imageTimer) clearInterval(imageTimer);
+
+            // รอให้ภาพดาวน์โหลดและเรนเดอร์เสร็จสมบูรณ์ก่อน ค่อยเริ่มจับเวลา 3 วินาที (แก้ปัญหาภาพโหลดไม่ทัน)
+            imgElement.onload = function() {
+                document.getElementById('instruction-text').innerText = "จดจำสิ่งที่คุณเห็น!";
+                imgElement.style.opacity = '1';
+                
+                let timeLeft = 3;
+                countdownEl.innerText = timeLeft;
+                countdownEl.style.display = 'flex'; // แสดงเวลานับถอยหลัง
+
+                imageTimer = setInterval(() => {
+                    timeLeft--;
+                    if (timeLeft > 0) {
+                        countdownEl.innerText = timeLeft;
+                    } else {
+                        clearInterval(imageTimer);
+                        countdownEl.style.display = 'none'; // ซ่อนเวลาเมื่อหมด
+                        currentImageIndex++;
+                        showNextImage();
+                    }
+                }, 1000);
+            };
+
+            // กรณีลิงก์รูปภาพมีปัญหา โหลดไม่ขึ้น ให้ข้ามไปภาพต่อไป
+            imgElement.onerror = function() {
+                console.error("ไม่สามารถโหลดภาพได้:", gameData.images[currentImageIndex]);
+                currentImageIndex++;
+                showNextImage();
+            };
+
+            // สั่งโหลดภาพใหม่
+            imgElement.src = gameData.images[currentImageIndex];
+        }
+
+        function endImagePhase() {
+            isImageShowing = false;
+            document.getElementById('game-progress').style.width = `100%`;
+            document.getElementById('round-image').style.opacity = '0';
+            document.getElementById('top-countdown').style.display = 'none'; // ตรวจสอบให้แน่ใจว่าซ่อนเวลานับถอยหลังแล้ว
+            document.getElementById('round-title').innerText = "เลือกคำตอบ";
+            document.getElementById('instruction-text').innerText = "เลือกสิ่งที่คุณเห็น 3 อันดับแรก";
+            
+            gameData.currentOptions = [...gameData.items].sort(() => Math.random() - 0.5);
+            renderOptions();
+        }
+
+        function renderOptions() {
+            const grid = document.getElementById('options-grid');
+            const options = gameData.currentOptions;
+            
+            options.forEach((item, index) => {
+                const btn = document.createElement('button');
+                btn.className = 'option-btn';
+                btn.innerText = item.name;
+                
+                const badge = document.createElement('div');
+                badge.className = 'rank-badge';
+                btn.appendChild(badge);
+
+                btn.onclick = () => handleOptionClick(index, btn, item);
+                grid.appendChild(btn);
+            });
+
+            setTimeout(() => grid.classList.add('active'), 100);
+        }
+
+        function handleOptionClick(index, btnElement, itemData) {
+            if (isImageShowing) return; 
+
+            const existingIndex = currentSelections.findIndex(sel => sel.index === index);
+
+            if (existingIndex > -1) {
+                currentSelections.splice(existingIndex, 1);
+            } else {
+                if (currentSelections.length >= 3) {
+                    currentSelections.shift(); 
+                }
+                currentSelections.push({ index: index, data: itemData });
+            }
+
+            updateOptionsUI();
+        }
+
+        function updateOptionsUI() {
+            const buttons = document.querySelectorAll('.option-btn');
+            
+            buttons.forEach(btn => {
+                btn.classList.remove('selected', 'rank-1', 'rank-2', 'rank-3');
+                btn.querySelector('.rank-badge').innerText = '';
+            });
+
+            currentSelections.forEach((sel, rankIndex) => {
+                const btn = buttons[sel.index];
+                btn.classList.add('selected');
+                const rankNum = rankIndex + 1;
+                btn.classList.add(`rank-${rankNum}`);
+                btn.querySelector('.rank-badge').innerText = rankNum;
+            });
+
+            document.getElementById('btn-next-round').disabled = currentSelections.length !== 3;
+        }
+
+        function submitAnswers() {
+            const points = [5, 3, 1];
+            currentSelections.forEach((sel, idx) => {
+                const category = sel.data.type;
+                scores[category] += points[idx];
+            });
+
+            calculateFinalResult();
+        }
+
+        function getVisitorId() {
+            let visitorId = localStorage.getItem('visitor_id');
+            if (!visitorId) {
+                visitorId = 'vid_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
+                localStorage.setItem('visitor_id', visitorId);
+            }
+            return visitorId;
+        }
+
+        function calculateFinalResult() {
+            showScreen('screen-result');
+
+            let highestCategory = CATEGORIES[0];
+            let maxScore = -1;
+
+            CATEGORIES.forEach(cat => {
+                if (scores[cat] > maxScore) {
+                    maxScore = scores[cat];
+                    highestCategory = cat;
+                }
+            });
+
+            const finalArchetype = ARCHETYPES[highestCategory];
+
+            const resultData = {
+                Timestamp: new Date().toISOString(),
+                VisitorID: getVisitorId(),
+                UserAgent: navigator.userAgent,
+                Gender: userData.gender,
+                Archetype: finalArchetype.name,
+                "Human Score": scores.Human,
+                "Animal Score": scores.Animal,
+                "Logic Score": scores.Logic,
+                "Language Score": scores.Language,
+                "Object Score": scores.Object,
+                "Nature Score": scores.Nature,
+                "Symbol Score": scores.Symbol,
+                "Motion Score": scores.Motion
+            };
+
+            saveResult(resultData, finalArchetype);
+        }
+
+        async function saveResult(data, archetype) {
+            try {
+                if (API_URL !== "YOUR_GOOGLE_APPS_SCRIPT_URL" && API_URL.startsWith("http")) {
+                    await fetch(API_URL, {
+                        method: 'POST',
+                        mode: 'no-cors',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(data)
+                    });
+                } else {
+                    await new Promise(resolve => setTimeout(resolve, 1500));
+                }
+            } catch (error) {
+                console.error('Error saving result:', error);
+            } finally {
+                document.getElementById('loading-result').style.display = 'none';
+                
+                document.getElementById('res-icon').innerText = archetype.icon;
+                document.getElementById('res-title').innerText = archetype.name;
+                document.getElementById('res-desc').innerText = archetype.desc;
+                document.getElementById('res-strength').innerText = archetype.strength;
+                document.getElementById('res-weakness').innerText = archetype.weakness;
+                document.getElementById('res-career').innerText = archetype.career;
+                
+                const finalResEl = document.getElementById('final-result');
+                finalResEl.style.display = 'block';
+                finalResEl.style.animation = 'fadeIn 1s ease-out forwards';
+            }
+        }
+
+        // ==========================================
+        // ระบบโหลดข้อมูลจาก Google Sheet (หน้าบ้าน)
+        // ==========================================
+        async function fetchGameDataFromSheet() {
+            const statusEl = document.getElementById('data-status');
+
+            if (API_URL === "YOUR_GOOGLE_APPS_SCRIPT_URL" || !API_URL.startsWith("http")) {
+                statusEl.innerText = "ไม่ได้เชื่อมต่อ Sheet (ใช้ข้อมูลสำรอง)";
+                statusEl.style.color = "#F59E0B";
+                isDataReady = true;
+                checkStartButton();
+                return;
+            }
+
+            try {
+                const response = await fetch(API_URL + "?action=getData");
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    if (data && data.images && data.images.length > 0 && data.items && data.items.length >= 3) {
+                        gameData = data; 
+                        statusEl.innerText = "✅ เตรียมข้อมูลพร้อมแล้ว";
+                        statusEl.style.color = "var(--success)";
+                    } else {
+                        statusEl.innerText = "⚠️ ระบบจะใช้ข้อมูลสำรองแทน";
+                        statusEl.style.color = "#F59E0B";
+                    }
+                }
+            } catch (error) {
+                console.error("ดึงข้อมูลไม่สำเร็จ:", error);
+                statusEl.innerText = "❌ ดึงข้อมูลล้มเหลว (ใช้ข้อมูลสำรองแทน)";
+                statusEl.style.color = "var(--error)";
+            } finally {
+                isDataReady = true;
+                checkStartButton();
+            }
+        }
+
+        // โหลดข้อมูลเมื่อเปิดหน้าเว็บ
+        window.addEventListener('DOMContentLoaded', fetchGameDataFromSheet);
+
+    </script>
+</body>
+</html>
